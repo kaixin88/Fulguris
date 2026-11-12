@@ -344,6 +344,33 @@
     <string name="pref_title_main_menu">主菜单</string>
     <string name="pref_category_filters">过滤器</string>
     <string name="pref_category_summary_filters">定义广告拦截器规则的本地或远程文件</string>
+
+    <!-- AI community rules bridge -->
+    <string name="pref_category_ai_rules">AI 社区规则</string>
+    <string name="pref_category_summary_ai_rules">AI 分析用户反馈生成的站点级规则，从社区桥拉取</string>
+    <string name="pref_title_site_rules_enabled">AI 社区规则</string>
+    <string name="pref_summary_on_site_rules_enabled">正在应用社区站点级去广告规则</string>
+    <string name="pref_summary_off_site_rules_enabled">开启后拉取并应用社区站点级规则</string>
+    <string name="pref_title_nav_guard_enabled">防跳转闸门</string>
+    <string name="pref_summary_on_nav_guard_enabled">拦截受控站点跳向无关域名</string>
+    <string name="pref_summary_off_nav_guard_enabled">开启后阻止受控站点的广告跳转</string>
+    <string name="pref_title_dom_cleaner_enabled">DOM 清扫</string>
+    <string name="pref_summary_on_dom_cleaner_enabled">清除隐形盖层、底部横幅与弹窗残留</string>
+    <string name="pref_summary_off_dom_cleaner_enabled">开启后清扫绕过网络拦截的页面元素</string>
+    <string name="pref_title_site_rules_url">规则地址（site-rules.json）</string>
+    <string name="pref_summary_site_rules_url">PHP 桥上规则文件的地址</string>
+    <string name="pref_title_site_rules_update_now">立即更新规则</string>
+    <string name="pref_summary_site_rules_update_now">拉取最新的社区规则</string>
+    <string name="pref_title_feedback_endpoint">反馈接口（feedback.php）</string>
+    <string name="pref_summary_feedback_endpoint">PHP 桥上反馈接收端的地址</string>
+    <string name="message_site_rules_updated">社区规则已更新</string>
+    <string name="message_site_rules_unchanged">社区规则无变化</string>
+    <string name="message_site_rules_failed">无法拉取社区规则</string>
+    <string name="action_ai_clean_site">AI 清理此站点</string>
+    <string name="message_feedback_sent">反馈已提交，分析完成后规则将下发所有人</string>
+    <string name="message_feedback_failed">反馈发送失败</string>
+    <string name="message_feedback_not_configured">尚未在广告拦截设置中配置反馈接口</string>
+    <string name="message_nav_blocked">已拦截跳转到 %s</string>
     <string name="pref_category_on_tab_close">标签页关闭时</string>
     <string name="pref_category_on_tab_change">标签页切换时</string>
     <string name="pref_category_on_tab_back_forward">前进后退时</string>

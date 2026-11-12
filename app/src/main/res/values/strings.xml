@@ -379,6 +379,33 @@
     <string name="pref_title_main_menu">Main menu</string>
     <string name="pref_category_filters">Filters</string>
     <string name="pref_category_summary_filters">Local or remote files defining your ad blocker rules</string>
+
+    <!-- AI community rules bridge -->
+    <string name="pref_category_ai_rules">AI community rules</string>
+    <string name="pref_category_summary_ai_rules">Per-site rules analysed by AI from user feedback, fetched from your community bridge</string>
+    <string name="pref_title_site_rules_enabled">AI community rules</string>
+    <string name="pref_summary_on_site_rules_enabled">Applying community per-site ad rules</string>
+    <string name="pref_summary_off_site_rules_enabled">Turn on to fetch and apply community per-site rules</string>
+    <string name="pref_title_nav_guard_enabled">Anti-redirect gate</string>
+    <string name="pref_summary_on_nav_guard_enabled">Blocking navigation to unrelated hosts on gated sites</string>
+    <string name="pref_summary_off_nav_guard_enabled">Turn on to stop ad redirects on gated sites</string>
+    <string name="pref_title_dom_cleaner_enabled">DOM sweeper</string>
+    <string name="pref_summary_on_dom_cleaner_enabled">Removing invisible overlays, bottom banners and popup leftovers</string>
+    <string name="pref_summary_off_dom_cleaner_enabled">Turn on to sweep page elements that bypass network blocking</string>
+    <string name="pref_title_site_rules_url">Rules URL (site-rules.json)</string>
+    <string name="pref_summary_site_rules_url">Address of the rules document on your PHP bridge</string>
+    <string name="pref_title_site_rules_update_now">Update rules now</string>
+    <string name="pref_summary_site_rules_update_now">Fetch the latest community rules</string>
+    <string name="pref_title_feedback_endpoint">Feedback endpoint (feedback.php)</string>
+    <string name="pref_summary_feedback_endpoint">Address of the feedback receiver on your PHP bridge</string>
+    <string name="message_site_rules_updated">Community rules updated</string>
+    <string name="message_site_rules_unchanged">Community rules unchanged</string>
+    <string name="message_site_rules_failed">Could not fetch community rules</string>
+    <string name="action_ai_clean_site">AI clean this site</string>
+    <string name="message_feedback_sent">Feedback sent, rules for this site will reach everyone after analysis</string>
+    <string name="message_feedback_failed">Could not send feedback</string>
+    <string name="message_feedback_not_configured">Feedback endpoint is not configured in ad block settings</string>
+    <string name="message_nav_blocked">Blocked redirect to %s</string>
     <string name="pref_category_on_tab_close">When closing tab</string>
     <string name="pref_category_on_tab_change">When changing tab</string>
     <string name="pref_category_on_tab_back_forward">When going back or forward</string>

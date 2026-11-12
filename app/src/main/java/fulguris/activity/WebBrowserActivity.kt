@@ -128,6 +128,10 @@ import io.reactivex.Completable
 import io.reactivex.Scheduler
 import io.reactivex.rxkotlin.subscribeBy
 import junit.framework.Assert.assertNull
+import kotlinx.coroutines.CoroutineScope
+import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
+import kotlinx.coroutines.withContext
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.IOException
@@ -804,6 +808,7 @@ abstract class WebBrowserActivity : ThemedBrowserActivity(),
             onMenuItemClicked(iBinding.menuItemDesktopMode) { dismiss(); executeAction(R.id.action_toggle_desktop_mode) }
             onMenuItemClicked(iBinding.menuItemDarkMode) { dismiss(); executeAction(R.id.action_toggle_dark_mode) }
             onMenuItemClicked(iBinding.menuItemAdBlock) { dismiss(); executeAction(R.id.action_block) }
+            onMenuItemClicked(iBinding.menuItemAiClean) { dismiss(); executeAction(R.id.action_ai_clean) }
             onMenuItemClicked(iBinding.menuItemTranslate) { dismiss(); executeAction(R.id.action_translate) }
             onMenuItemClicked(iBinding.menuItemForceReload) { dismiss(); executeAction(R.id.action_force_reload) }
             onMenuItemClicked(iBinding.menuItemLaunchApp) { dismiss(); executeAction(R.id.action_launch_app) }
@@ -991,6 +996,103 @@ abstract class WebBrowserActivity : ThemedBrowserActivity(),
      */
     private fun showPageRequests() {
         iBottomSheet.setLayout(R.layout.fragment_page_requests).show()
+    }
+
+    /**
+     * Feature: AI clean this site.
+     * Collect a sanitized DOM snapshot (tag/id/class/geometry only, never content)
+     * plus the page's request log with block status, then POST the JSON payload to
+     * the user configured feedback endpoint (PHP bridge). The NAS-side AI analyses
+     * submissions and publishes per-site rules to every user via site-rules.json.
+     */
+    private fun submitAiCleanFeedback() {
+        val endpoint = userPreferences.feedbackEndpoint
+        if (endpoint.isBlank() || !endpoint.startsWith("http")) {
+            snackbar(R.string.message_feedback_not_configured)
+            return
+        }
+        val view = currentTabView
+        val tab = tabsManager.currentTab
+        if (view == null || tab == null) return
+        val pageUrl = currentUrl()
+        if (pageUrl.isBlank()) return
+
+        // Sanitized DOM census: structure and geometry only, no text content,
+        // so no page data leaks through the feedback channel.
+        val domScript = """
+            (function(){
+                var out=[];
+                try{
+                    var els=document.querySelectorAll('body *');
+                    for(var i=0;i<els.length&&out.length<3000;i++){
+                        var el=els[i];
+                        var r=el.getBoundingClientRect();
+                        if(r.width===0&&r.height===0&&!el.id&&!el.className)continue;
+                        var cs=getComputedStyle(el);
+                        out.push({
+                            t:el.tagName,
+                            i:el.id||null,
+                            c:(typeof el.className==='string'?el.className:null),
+                            x:Math.round(r.x),y:Math.round(r.y),
+                            w:Math.round(r.width),h:Math.round(r.height),
+                            o:cs.opacity,p:cs.position,z:cs.zIndex,
+                            s:(el.src||el.href||'').toString().substring(0,160)
+                        })
+                    }
+                }catch(e){}
+                return JSON.stringify(out)
+            })()
+        """.trimIndent()
+
+        view.evaluateJavascript(domScript, android.webkit.ValueCallback<String> { raw ->
+            // evaluateJavascript hands back a JSON quoted string literal
+            val domJson = try {
+                when {
+                    raw == null || raw == "null" -> "[]"
+                    else -> org.json.JSONTokener(raw).nextValue().toString()
+                }
+            } catch (e: Exception) { "[]" }
+
+            val requests = org.json.JSONArray()
+            tab.webPageClient.getPageRequests().takeLast(400).forEach { pr ->
+                requests.put(org.json.JSONObject().apply {
+                    put("url", pr.url.take(500))
+                    put("blocked", pr.wasBlocked)
+                })
+            }
+
+            val payload = org.json.JSONObject().apply {
+                put("url", pageUrl)
+                put("host", android.net.Uri.parse(pageUrl).host ?: "")
+                put("ts", System.currentTimeMillis())
+                put("dom", domJson)
+                put("requests", requests)
+                put("ua", view.settings.userAgentString)
+                put("locale", java.util.Locale.getDefault().toString())
+                put("rulesVersion", 1)
+            }
+
+            CoroutineScope(Dispatchers.IO).launch {
+                var sent = false
+                try {
+                    val connection = java.net.URL(endpoint).openConnection() as java.net.HttpURLConnection
+                    connection.requestMethod = "POST"
+                    connection.connectTimeout = 10000
+                    connection.readTimeout = 20000
+                    connection.doOutput = true
+                    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
+                    val bytes = payload.toString().toByteArray(Charsets.UTF_8)
+                    connection.outputStream.use { it.write(bytes) }
+                    sent = connection.responseCode in 200..299
+                } catch (e: Exception) {
+                    Timber.e(e, "AI clean feedback failed")
+                }
+                withContext(Dispatchers.Main) {
+                    val message = if (sent) R.string.message_feedback_sent else R.string.message_feedback_failed
+                    snackbar(message)
+                }
+            }
+        })
     }
 
     /**
@@ -2894,6 +2996,11 @@ abstract class WebBrowserActivity : ThemedBrowserActivity(),
 
                 abpUserRules.allowPage(Uri.parse(tabsManager.currentTab?.url), !iMenuCustom.iBinding.menuItemAdBlock.isChecked)
                 tabsManager.currentTab?.reload()
+                return true
+            }
+
+            R.id.action_ai_clean -> {
+                submitAiCleanFeedback()
                 return true
             }
 

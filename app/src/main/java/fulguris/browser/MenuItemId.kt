@@ -48,6 +48,7 @@ enum class MenuItemId {
     Translate,
     ReaderMode,
     AdBlock,
+    AiClean,
     DarkMode,
     DesktopMode,
     AddBookmark,

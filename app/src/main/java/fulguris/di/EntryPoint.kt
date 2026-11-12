@@ -64,6 +64,8 @@ interface HiltEntryPoint {
     val nestedScrollDetectJs: NestedScrollDetect
     val blobDownloadJs: BlobDownload
     val blobHookJs: BlobHook
+    val adCleanerJs: fulguris.js.AdCleaner
+    val siteRulesManager: fulguris.adrules.SiteRulesManager
     val homePageFactory: HomePageFactory
     val abpBlockerManager: AbpBlockerManager
     val noopBlocker: NoOpAdBlocker

@@ -145,6 +145,15 @@
     <string name="pref_key_blocklist_auto_update_frequency">pref_key_blocklist_auto_update_frequency</string>
     <string name="pref_key_modify_filters">pref_key_modify_filters</string>
 
+    <!-- AI community rules (site-rules.json bridge) -->
+    <string name="pref_key_site_rules_category">pref_key_site_rules_category</string>
+    <string name="pref_key_site_rules_enabled">pref_key_site_rules_enabled</string>
+    <string name="pref_key_nav_guard_enabled">pref_key_nav_guard_enabled</string>
+    <string name="pref_key_dom_cleaner_enabled">pref_key_dom_cleaner_enabled</string>
+    <string name="pref_key_site_rules_url">pref_key_site_rules_url</string>
+    <string name="pref_key_site_rules_update_now">pref_key_site_rules_update_now</string>
+    <string name="pref_key_feedback_endpoint">pref_key_feedback_endpoint</string>
+
 
     <string name="pref_key_session_export_category">pref_key_session_export_category</string>
     <string name="pref_key_sessions_import">pref_key_sessions_import</string>

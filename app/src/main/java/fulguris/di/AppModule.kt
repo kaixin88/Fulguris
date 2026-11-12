@@ -207,6 +207,9 @@ class AppModule {
 
     @Provides
     fun providesBlobHook(): BlobHook = mezzanine<BlobHook>()
+
+    @Provides
+    fun providesAdCleaner(): fulguris.js.AdCleaner = mezzanine<fulguris.js.AdCleaner>()
 }
 
 @Qualifier

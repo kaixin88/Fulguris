@@ -208,6 +208,15 @@ object MenuItems {
             canBeInTabMenu = true,
             defaultMenu = MenuType.TabMenu
         ),
+        MenuItemId.AiClean to MenuItem(
+            id = MenuItemId.AiClean,
+            labelId = R.string.action_ai_clean_site,
+            iconId = R.drawable.ic_extension_outline,
+            viewId = R.id.menuItemAiClean,
+            canBeInMainMenu = true,
+            canBeInTabMenu = true,
+            defaultMenu = MenuType.TabMenu
+        ),
         MenuItemId.DarkMode to MenuItem(
             id = MenuItemId.DarkMode,
             labelId = R.string.theme_dark,

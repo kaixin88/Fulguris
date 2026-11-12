@@ -41,4 +41,68 @@
             app:singleLineTitle="false">
         </x.PreferenceCategory>
 
+    <!-- AI community rules fetched from the PHP bridge -->
+    <x.PreferenceCategory
+        android:key="@string/pref_key_site_rules_category"
+        android:title="@string/pref_category_ai_rules"
+        android:summary="@string/pref_category_summary_ai_rules"
+        app:singleLineTitle="false">
+
+        <x.SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_site_rules_enabled"
+            android:title="@string/pref_title_site_rules_enabled"
+            android:summaryOn="@string/pref_summary_on_site_rules_enabled"
+            android:summaryOff="@string/pref_summary_off_site_rules_enabled"
+            app:icon="@drawable/ic_extension_outline"
+            app:singleLineTitle="false" />
+
+        <x.SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_nav_guard_enabled"
+            android:title="@string/pref_title_nav_guard_enabled"
+            android:summaryOn="@string/pref_summary_on_nav_guard_enabled"
+            android:summaryOff="@string/pref_summary_off_nav_guard_enabled"
+            android:dependency="@string/pref_key_site_rules_enabled"
+            app:icon="@drawable/ic_action_refresh"
+            app:singleLineTitle="false" />
+
+        <x.SwitchPreference
+            android:defaultValue="true"
+            android:key="@string/pref_key_dom_cleaner_enabled"
+            android:title="@string/pref_title_dom_cleaner_enabled"
+            android:summaryOn="@string/pref_summary_on_dom_cleaner_enabled"
+            android:summaryOff="@string/pref_summary_off_dom_cleaner_enabled"
+            android:dependency="@string/pref_key_site_rules_enabled"
+            app:icon="@drawable/ic_block"
+            app:singleLineTitle="false" />
+
+        <x.EditTextPreference
+            android:key="@string/pref_key_site_rules_url"
+            android:title="@string/pref_title_site_rules_url"
+            android:summary="@string/pref_summary_site_rules_url"
+            android:inputType="textUri"
+            android:dependency="@string/pref_key_site_rules_enabled"
+            app:icon="@drawable/ic_web"
+            app:singleLineTitle="false" />
+
+        <x.EditTextPreference
+            android:key="@string/pref_key_feedback_endpoint"
+            android:title="@string/pref_title_feedback_endpoint"
+            android:summary="@string/pref_summary_feedback_endpoint"
+            android:inputType="textUri"
+            android:dependency="@string/pref_key_site_rules_enabled"
+            app:icon="@drawable/ic_web"
+            app:singleLineTitle="false" />
+
+        <Preference
+            android:key="@string/pref_key_site_rules_update_now"
+            android:title="@string/pref_title_site_rules_update_now"
+            android:summary="@string/pref_summary_site_rules_update_now"
+            android:dependency="@string/pref_key_site_rules_enabled"
+            app:icon="@drawable/ic_update"
+            app:singleLineTitle="false" />
+
+    </x.PreferenceCategory>
+
 </androidx.preference.PreferenceScreen>

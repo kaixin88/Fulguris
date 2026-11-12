@@ -1,0 +1,15 @@
+{
+  "version": 1,
+  "updated": "1970-01-01T00:00:00Z",
+  "sites": [
+    {
+      "domain": "example.com",
+      "v": 1,
+      "rules": ["invisible-hotspot", "computed-hotspot", "bottom-banner", "random-tag", "random-name", "cover-iframe", "ad-host", "popup-text"],
+      "hosts": ["ads.example.com", "tracker.example.net"],
+      "cosmetic": [".promo-banner-slot"],
+      "navAllow": ["example.com", "*.example.com", "mirror.example.net"],
+      "htmlSig": []
+    }
+  ]
+}

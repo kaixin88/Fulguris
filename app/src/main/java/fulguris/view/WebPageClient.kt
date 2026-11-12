@@ -98,6 +98,8 @@ class WebPageClient(
     val setMetaViewport: SetMetaViewport = hiltEntryPoint.setMetaViewport
     val nestedScrollDetectJs: NestedScrollDetect = hiltEntryPoint.nestedScrollDetectJs
     val blobHookJs: fulguris.js.BlobHook = hiltEntryPoint.blobHookJs
+    val adCleanerJs: fulguris.js.AdCleaner = hiltEntryPoint.adCleanerJs
+    val siteRulesManager: fulguris.adrules.SiteRulesManager = hiltEntryPoint.siteRulesManager
     val homePageFactory: HomePageFactory = hiltEntryPoint.homePageFactory
     val abpBlockerManager: AbpBlockerManager = hiltEntryPoint.abpBlockerManager
     val noopBlocker: NoOpAdBlocker = hiltEntryPoint.noopBlocker
@@ -132,6 +134,11 @@ class WebPageClient(
     )
 
     private val pageRequests = mutableListOf<PageRequest>()
+
+    // Navigation gate feedback throttling: hostile scripts retry redirects on a
+    // timer so an unthrottled toast would flood the user (see technical notes).
+    private var navBlockedToastCount = 0
+    private var navBlockedLastToastTime = 0L
 
     /**
      * Get all requests for the current page
@@ -168,6 +175,43 @@ class WebPageClient(
         abpBlockerManager
     } else {
         noopBlocker
+    }
+
+    /**
+     * Layer 4 injection: build the small JSON config for this site and evaluate
+     * config + sweeper script in one call. The sweeper is idempotent so SPA
+     * re-navigation is a no-op. Never throws (fail-open).
+     */
+    private fun injectDomCleanerIfNeeded(view: WebView, url: String) {
+        if (!userPreferences.siteRulesEnabled || !userPreferences.domCleanerEnabled) return
+        if (url.isSpecialUrl() || !URLUtil.isNetworkUrl(url)) return
+        val host = url.toUri().host ?: return
+        val rule = siteRulesManager.ruleFor(host) ?: return
+        if (rule.rules.isEmpty() && rule.cosmetic.isEmpty()) return
+        try {
+            val config = org.json.JSONObject().apply {
+                put("site", rule.domain)
+                put("rules", org.json.JSONArray(rule.rules))
+                put("cosmetic", org.json.JSONArray(rule.cosmetic))
+                put("hosts", org.json.JSONArray(rule.hosts))
+            }
+            view.evaluateJavascript("window.__ADC__=$config;${adCleanerJs.provideJs()}", null)
+            Timber.d("$ihs : AdCleaner injected for $host")
+        } catch (e: Exception) {
+            Timber.w(e, "$ihs : AdCleaner injection failed")
+        }
+    }
+
+    /**
+     * Throttled feedback for the navigation gate: hostile scripts retry redirects
+     * on a timer so we cap at 3 toasts per page with an 8s cool-down.
+     */
+    private fun notifyNavBlocked(view: WebView, targetHost: String) {
+        val now = System.currentTimeMillis()
+        if (navBlockedToastCount >= 3 || now - navBlockedLastToastTime < 8000) return
+        navBlockedToastCount++
+        navBlockedLastToastTime = now
+        activity.makeSnackbar(activity.getString(R.string.message_nav_blocked, targetHost), KDuration, Gravity.BOTTOM).show()
     }
 
     /**
@@ -481,6 +525,10 @@ class WebPageClient(
         onPageFinishedDone = false
         webPageTab.isLoading = true
 
+        // New page: reset navigation gate feedback throttling
+        navBlockedToastCount = 0
+        navBlockedLastToastTime = 0
+
         //TODO: Could update targetUrl?
         // When opening bbc.com in a new tab resolved as http://bbc.com - onLoadResource for main frame was still the targetUrl http://bbc.com
         // But onPageStarted is actually https://www.bbc.com so in this case we have like a discreet redirect
@@ -505,6 +553,11 @@ class WebPageClient(
                 view.evaluateJavascript(scriptCode, null)
             }
         }
+
+        // Layer 4: DOM sweeper - inject the behavioural AdCleaner as early as
+        // possible so ad nodes are removed before first paint. Config is a small
+        // JSON assigned to window.__ADC__ just before the sweeper code.
+        injectDomCleanerIfNeeded(view, url)
 
         (view as WebViewEx).proxy.apply {
             // Only apply domain settings dark mode if no bypass
@@ -857,6 +910,24 @@ class WebPageClient(
         // If we are in incognito, immediately load, we don't want the url to leave the app
         if (webPageTab.isIncognito || url.isSpecialUrl() || URLUtil.isAboutUrl(url)) {
             return shouldStopUrlLoading(view, url, headers)
+        }
+
+        // Layer 3: navigation gate - while browsing a site carrying a community rule
+        // with a navAllow whitelist, main frame navigations to unrelated hosts are
+        // blocked (JS location hijack, 30x chains, click-hijack and ad pop-ups).
+        // Explicit user actions (address bar, bookmarks) bypass this callback.
+        if (request.isForMainFrame && userPreferences.siteRulesEnabled && userPreferences.navGuardEnabled) {
+            val pageHost = currentUrl.toUri().host
+            val targetHost = request.url.host
+            if (pageHost != null && targetHost != null && pageHost != targetHost) {
+                val rule = siteRulesManager.ruleFor(pageHost)
+                if (rule != null && !rule.isNavAllowed(targetHost)) {
+                    notifyNavBlocked(view, targetHost)
+                    Timber.i("$ihs : Nav gate blocked: $pageHost -> $targetHost")
+                    view.stopLoading()
+                    return true
+                }
+            }
         }
 
         // Check if this is a userscript file (.user.js) and handle installation

@@ -444,6 +444,35 @@ class UserPreferences @Inject constructor(
      */
     var modifyFilters by preferences.intPreference(R.string.pref_key_modify_filters, 0)
 
+    /**
+     * True to fetch and apply AI community per-site rules (site-rules.json)
+     * distributed through the PHP bridge.
+     */
+    var siteRulesEnabled by preferences.booleanPreference(R.string.pref_key_site_rules_enabled, true)
+
+    /**
+     * True to enforce the per-site navigation gate: while browsing a site with a
+     * navAllow whitelist, main frame navigations to unrelated hosts are blocked.
+     */
+    var navGuardEnabled by preferences.booleanPreference(R.string.pref_key_nav_guard_enabled, true)
+
+    /**
+     * True to inject the behavioural DOM sweeper (AdCleaner.js) on sites with rules.
+     */
+    var domCleanerEnabled by preferences.booleanPreference(R.string.pref_key_dom_cleaner_enabled, true)
+
+    /**
+     * URL of the site-rules.json document on the PHP bridge.
+     * Empty until the user configures their bridge.
+     */
+    var siteRulesUrl by preferences.stringPreference(R.string.pref_key_site_rules_url, "")
+
+    /**
+     * URL of the feedback endpoint (feedback.php) on the PHP bridge.
+     * Empty until the user configures their bridge.
+     */
+    var feedbackEndpoint by preferences.stringPreference(R.string.pref_key_feedback_endpoint, "")
+
     ///
     /// Various tab event actions
     ///

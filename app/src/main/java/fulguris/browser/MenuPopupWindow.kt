@@ -284,6 +284,7 @@ class MenuPopupWindow : PopupWindow {
         iBinding.menuItemAddBookmark.isVisible = false
         iBinding.menuItemShare.isVisible = false
         iBinding.menuItemAdBlock.isVisible = false
+        iBinding.menuItemAiClean.isVisible = false
         iBinding.menuItemTranslate.isVisible = false
         iBinding.menuItemPageRequests.isVisible = false
         iBinding.menuItemConsole.isVisible = false
@@ -327,6 +328,7 @@ class MenuPopupWindow : PopupWindow {
             MenuItemId.AddBookmark -> iBinding.menuItemAddBookmark.isVisible = true
             MenuItemId.Share -> iBinding.menuItemShare.isVisible = true
             MenuItemId.AdBlock -> iBinding.menuItemAdBlock.isVisible = true
+            MenuItemId.AiClean -> iBinding.menuItemAiClean.isVisible = true
             MenuItemId.Translate -> iBinding.menuItemTranslate.isVisible = true
             MenuItemId.Requests -> iBinding.menuItemPageRequests.isVisible = true
             MenuItemId.Console -> iBinding.menuItemConsole.isVisible = true
@@ -389,6 +391,7 @@ class MenuPopupWindow : PopupWindow {
                 iBinding.menuItemAddBookmark.isVisible = false
                 iBinding.menuItemShare.isVisible = false
                 iBinding.menuItemAdBlock.isVisible = false
+        iBinding.menuItemAiClean.isVisible = false
                 iBinding.menuItemTranslate.isVisible = false
                 iBinding.menuItemPageRequests.isVisible = false
                 iBinding.menuItemConsole.isVisible = false
@@ -409,6 +412,7 @@ class MenuPopupWindow : PopupWindow {
                     iBinding.menuItemAddBookmark.isVisible = false
                     iBinding.menuItemShare.isVisible = false
                     iBinding.menuItemAdBlock.isVisible = false
+        iBinding.menuItemAiClean.isVisible = false
                     iBinding.menuItemTranslate.isVisible = false
                     iBinding.menuItemForceReload.isVisible = false
                     iBinding.menuItemLaunchApp.isVisible = false
@@ -418,6 +422,7 @@ class MenuPopupWindow : PopupWindow {
                 // Hide ad block if not enabled in settings
                 if (!iUserPreferences.adBlockEnabled) {
                     iBinding.menuItemAdBlock.isVisible = false
+        iBinding.menuItemAiClean.isVisible = false
                 }
 
                 // Handle LaunchApp visibility and icon only if it's in the current menu

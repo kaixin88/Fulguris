@@ -43,6 +43,7 @@ class AdBlockSettingsFragment : AbstractSettingsFragment() {
     @Inject internal lateinit var userPreferences: UserPreferences
     @Inject internal lateinit var abpListUpdater: AbpListUpdater
     @Inject internal lateinit var abpBlockerManager: AbpBlockerManager
+    @Inject internal lateinit var siteRulesManager: fulguris.adrules.SiteRulesManager
 
     private lateinit var abpDao: AbpDao
     private val entityPrefs = mutableMapOf<Int, DetailSwitchPreference>()
@@ -160,6 +161,56 @@ class AdBlockSettingsFragment : AbstractSettingsFragment() {
                         }
                         setPositiveButton(R.string.action_ok, null)
                     }?.launch()
+                    true
+                }
+            )
+
+            // AI community rules: group toggles
+            switchPreference(
+                preference = getString(R.string.pref_key_site_rules_enabled),
+                isChecked = userPreferences.siteRulesEnabled,
+                onCheckChange = {
+                    userPreferences.siteRulesEnabled = it
+                    if (it) {
+                        // Fetch the rules right away when enabling
+                        GlobalScope.launch(Dispatchers.IO) {
+                            siteRulesManager.updateAsync(force = true)
+                        }
+                    }
+                }
+            )
+
+            switchPreference(
+                preference = getString(R.string.pref_key_nav_guard_enabled),
+                isChecked = userPreferences.navGuardEnabled,
+                onCheckChange = { userPreferences.navGuardEnabled = it }
+            )
+
+            switchPreference(
+                preference = getString(R.string.pref_key_dom_cleaner_enabled),
+                isChecked = userPreferences.domCleanerEnabled,
+                onCheckChange = { userPreferences.domCleanerEnabled = it }
+            )
+
+            // Manual rules update
+            clickableDynamicPreference(
+                preference = getString(R.string.pref_key_site_rules_update_now),
+                summary = resources.getString(R.string.pref_summary_site_rules_update_now),
+                onClick = { summaryUpdater ->
+                    GlobalScope.launch(Dispatchers.IO) {
+                        val changed = siteRulesManager.updateAsync(force = true)
+                        withContext(Dispatchers.Main) {
+                            context?.let { ctx ->
+                                val message = when {
+                                    changed -> R.string.message_site_rules_updated
+                                    siteRulesManager.sitesCount() > 0 -> R.string.message_site_rules_unchanged
+                                    else -> R.string.message_site_rules_failed
+                                }
+                                ctx.toast(message)
+                            }
+                            summaryUpdater.updateSummary(resources.getString(R.string.pref_summary_site_rules_update_now))
+                        }
+                    }
                     true
                 }
             )

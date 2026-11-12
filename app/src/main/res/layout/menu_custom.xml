@@ -310,6 +310,15 @@
                         app:drawableStartCompat="@drawable/ic_block"
                         />
 
+                    <TextView
+                        android:id="@+id/menuItemAiClean"
+                        style="@style/BrowserTextMenuItem"
+                        android:visibility="gone"
+                        tools:visibility="visible"
+                        app:drawableStartCompat="@drawable/ic_extension_outline"
+                        android:text="@string/action_ai_clean_site"
+                        />
+
                     <CheckBox
                         android:id="@+id/menuItemCursor"
                         style="@style/BrowserTextMenuItem"
