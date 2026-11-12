@@ -524,7 +524,8 @@ mezzanine {
             "src/main/js/ThemeColor.js",
             "src/main/js/NestedScrollDetect.js",
             "src/main/js/BlobDownload.js",
-            "src/main/js/BlobHook.js"
+            "src/main/js/BlobHook.js",
+            "src/main/js/AdCleaner.js"
     )
 }
 
