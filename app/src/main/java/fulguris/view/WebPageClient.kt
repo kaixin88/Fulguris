@@ -178,6 +178,52 @@ class WebPageClient(
     }
 
     /**
+     * Layer 1: block sub-resources whose host is listed in the AI community rule for
+     * the current page host. Main frame requests are never blocked here so a bad rule
+     * can never strand the user on a blank page (the navigation gate handles those).
+     *
+     * Returns null when the request is allowed or no rule applies (fail-open).
+     */
+    private fun siteRuleBlockResponse(request: WebResourceRequest): WebResourceResponse? {
+        if (!userPreferences.siteRulesEnabled) return null
+        if (request.isForMainFrame) return null
+        val pageHost = currentUrl.toUri().host ?: return null
+        val rule = siteRulesManager.ruleFor(pageHost) ?: return null
+        if (rule.hosts.isEmpty()) return null
+        val host = request.url.host?.lowercase() ?: return null
+        // Strict suffix match: never contains(), so notexample.com cannot match example.com
+        val blocked = rule.hosts.any { entry ->
+            val d = entry.trim().lowercase()
+            d.isNotEmpty() && (host == d || host.endsWith(".$d"))
+        }
+        if (!blocked) return null
+
+        val path = request.url.path ?: ""
+        val (asset, mime, charset) = when {
+            path.endsWith(".js") -> Triple("noop.js", "application/javascript", "utf-8")
+            path.endsWith(".css") -> Triple("empty", "text/css", "utf-8")
+            path.endsWith(".json") -> Triple("empty", "application/json", "utf-8")
+            path.endsWith(".html") -> Triple("noop.html", "text/html", "utf-8")
+            path.endsWith(".gif") -> Triple("1x1.gif", "image/gif", null)
+            path.endsWith(".png") -> Triple("2x2.png", "image/png", null)
+            path.endsWith(".jpg") || path.endsWith(".jpeg") -> Triple("2x2.png", "image/jpeg", null)
+            path.endsWith(".mp4") -> Triple("noop-1s.mp4", "video/mp4", null)
+            path.endsWith(".mp3") -> Triple("noop-0.1s.mp3", "audio/mpeg", null)
+            else -> Triple("empty", "text/plain", "utf-8")
+        }
+        Timber.d("$ihs : Site rule blocked $host$path")
+        return try {
+            val stream = activity.applicationContext.assets.open("blocker_resources/$asset")
+            WebResourceResponse(mime, charset, stream).apply {
+                responseHeaders = mapOf("Cache-Control" to "no-cache")
+            }
+        } catch (e: Exception) {
+            Timber.w(e, "$ihs : Site rule block response failed")
+            null
+        }
+    }
+
+    /**
      * Layer 4 injection: build the small JSON config for this site and evaluate
      * config + sweeper script in one call. The sweeper is idempotent so SPA
      * re-navigation is a no-op. Never throws (fail-open).
@@ -249,7 +295,10 @@ class WebPageClient(
         Timber.v("$ihs : shouldInterceptRequest - ${if (request.isForMainFrame) "Main frame" else "Resource"} - ${request.url}")
 
         // First, check if ad blocker blocks this request (returns dummy response if blocked, null if not)
-        val response = adBlock.shouldBlock(request, currentUrl)
+        // Layer 1 of the community rule pipeline is chained here: per-site ad hosts
+        // from the AI rules are blocked with an empty body carrying the correct MIME
+        // so site scripts see a successful load instead of their failure fallback.
+        val response = adBlock.shouldBlock(request, currentUrl) ?: siteRuleBlockResponse(request)
         val wasBlocked = response != null
 
         val url = request.url.toString()
