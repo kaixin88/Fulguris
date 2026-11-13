@@ -1,15 +1,27 @@
-# 社区桥 .htaccess - 保护敏感文件与目录
-# 需要 Apache + mod_rewrite；nginx 用户请参考 README 等价配置。
+# AdZero 社区桥 .htaccess
+# 需要 Apache + mod_rewrite（InfinityFree 已支持）
 
-# 禁止直接访问：配置（含密钥）、反馈队列
-<FilesMatch "^(config\.php|config-sample\.php)$">
+DirectoryIndex index.php index.html
+Options -Indexes
+
+<IfModule mod_rewrite.c>
+  RewriteEngine On
+
+  # 反馈队列与配置禁止直接访问
+  RewriteRule ^pending/ - [F,L]
+</IfModule>
+
+<FilesMatch "^(config|config\.sample|lib)\.php$">
   Require all denied
 </FilesMatch>
 
-RewriteEngine On
-RewriteRule ^pending/ - [F,L]
+# 规则文件允许匿名 GET，给客户端留短缓存
+<IfModule mod_headers.c>
+  <FilesMatch "\.json$">
+    Header set Cache-Control "max-age=300, public"
+  </FilesMatch>
+</IfModule>
 
-# 规则文件本身允许匿名 GET（客户端拉取），保留默认缓存策略
-<FilesMatch "\.json$">
-  Header set Cache-Control "max-age=300, public"
-</FilesMatch>
+<IfModule mod_deflate.c>
+  AddOutputFilterByType DEFLATE application/json text/plain
+</IfModule>

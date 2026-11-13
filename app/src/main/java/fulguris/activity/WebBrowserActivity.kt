@@ -225,6 +225,7 @@ abstract class WebBrowserActivity : ThemedBrowserActivity(),
     @Inject lateinit var bookmarksDialogBuilder: LightningDialogBuilder
     @Inject lateinit var exitCleanup: ExitCleanup
     @Inject lateinit var abpUserRules: AbpUserRules
+    @Inject lateinit var bridgeClient: fulguris.adrules.BridgeClient
     //
     @Inject lateinit var tabsManager: TabsManager
     @Inject lateinit var sessionsManager: SessionsManager
@@ -1073,20 +1074,9 @@ abstract class WebBrowserActivity : ThemedBrowserActivity(),
             }
 
             CoroutineScope(Dispatchers.IO).launch {
-                var sent = false
-                try {
-                    val connection = java.net.URL(endpoint).openConnection() as java.net.HttpURLConnection
-                    connection.requestMethod = "POST"
-                    connection.connectTimeout = 10000
-                    connection.readTimeout = 20000
-                    connection.doOutput = true
-                    connection.setRequestProperty("Content-Type", "application/json; charset=utf-8")
-                    val bytes = payload.toString().toByteArray(Charsets.UTF_8)
-                    connection.outputStream.use { it.write(bytes) }
-                    sent = connection.responseCode in 200..299
-                } catch (e: Exception) {
-                    Timber.e(e, "AI clean feedback failed")
-                }
+                // BridgeClient adds the fixed UA and the hosting provider's challenge
+                // cookie, so the POST is not answered with the JS challenge page.
+                val sent = bridgeClient.postJson(endpoint, payload.toString())
                 withContext(Dispatchers.Main) {
                     val message = if (sent) R.string.message_feedback_sent else R.string.message_feedback_failed
                     snackbar(message)

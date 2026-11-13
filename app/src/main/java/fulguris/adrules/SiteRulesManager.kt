@@ -8,12 +8,9 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.sync.Mutex
 import kotlinx.coroutines.sync.withLock
-import okhttp3.OkHttpClient
-import okhttp3.Request
 import org.json.JSONObject
 import timber.log.Timber
 import java.io.File
-import java.util.concurrent.TimeUnit
 import javax.inject.Inject
 import javax.inject.Singleton
 
@@ -32,22 +29,13 @@ import javax.inject.Singleton
 class SiteRulesManager @Inject constructor(
     @ApplicationContext private val context: Context,
     private val userPreferences: UserPreferences,
+    private val bridge: BridgeClient,
 ) {
 
     @Volatile private var index: SiteRulesIndex? = null
     @Volatile private var lastFetchAttempt: Long = 0
 
     private val fetchMutex = Mutex()
-
-    // Persisted ETag for conditional requests.
-    private val prefs by lazy { context.getSharedPreferences("site_rules", Context.MODE_PRIVATE) }
-
-    private val client by lazy {
-        OkHttpClient.Builder()
-            .connectTimeout(10, TimeUnit.SECONDS)
-            .readTimeout(20, TimeUnit.SECONDS)
-            .build()
-    }
 
     private val cacheFile: File
         get() = File(context.filesDir, "site_rules.json")
@@ -87,36 +75,17 @@ class SiteRulesManager @Inject constructor(
         if (url.isBlank() || !url.startsWith("http")) return@withLock false
 
         return@withLock try {
-            val builder = Request.Builder().url(url)
-            prefs.getString(KEY_ETAG, null)?.let { builder.header("If-None-Match", it) }
-            prefs.getString(KEY_MODIFIED, null)?.let { builder.header("If-Modified-Since", it) }
-
-            client.newCall(builder.build()).execute().use { response ->
-                when {
-                    response.code == 304 -> {
-                        Timber.d("Site rules unchanged (304)")
-                        false
-                    }
-                    response.isSuccessful -> {
-                        val body = response.body?.string() ?: return@withLock false
-                        val parsed = SiteRulesIndex.fromJson(JSONObject(body))
-                        index = parsed
-                        // Persist the good document.
-                        runCatching { cacheFile.writeText(body) }
-                        response.header("ETag")?.let { prefs.edit().putString(KEY_ETAG, it).apply() }
-                        response.header("Last-Modified")?.let { prefs.edit().putString(KEY_MODIFIED, it).apply() }
-                        Timber.d("Site rules updated: ${parsed.sites.size} sites (v${parsed.version})")
-                        true
-                    }
-                    else -> {
-                        Timber.w("Site rules fetch failed: HTTP ${response.code}")
-                        false
-                    }
-                }
-            }
+            // BridgeClient handles the hosting provider's JS challenge and the
+            // UA-bound cookie transparently, so this stays a plain GET.
+            val body = bridge.getText(url) ?: return@withLock false
+            val parsed = SiteRulesIndex.fromJson(JSONObject(body))
+            index = parsed
+            runCatching { cacheFile.writeText(body) }
+            Timber.d("Site rules updated: ${parsed.sites.size} sites (v${parsed.version})")
+            true
         } catch (e: Exception) {
-            // Network unavailable, malformed document, ... fail-open, keep old rules.
-            Timber.w(e, "Site rules fetch error")
+            // Malformed document, ... fail-open, keep old rules.
+            Timber.w(e, "Site rules parse error")
             false
         }
     }
@@ -134,8 +103,6 @@ class SiteRulesManager @Inject constructor(
     fun sitesCount(): Int = index?.sites?.size ?: 0
 
     companion object {
-        private const val KEY_ETAG = "etag"
-        private const val KEY_MODIFIED = "modified"
         private const val MIN_FETCH_INTERVAL_MS = 60_000L // At most one attempt per minute
     }
 }

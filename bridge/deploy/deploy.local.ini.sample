@@ -1,0 +1,13 @@
+[ftp]
+host = ftpupload.net
+port = 21
+user = if0_42951426
+password = CHANGE_ME
+# 网站根下的 bridge 目录（InfinityFree 换过主域名，根是 <域名>/htdocs）
+remote_dir = /adzero.free.nf/htdocs/bridge
+
+[bridge]
+# 与 NAS 侧 config.ini 的 secret 一致，长随机串
+secret = CHANGE_ME
+# 数据库口令（= 面板密码）
+db_pass = CHANGE_ME

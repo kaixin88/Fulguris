@@ -462,16 +462,20 @@ class UserPreferences @Inject constructor(
     var domCleanerEnabled by preferences.booleanPreference(R.string.pref_key_dom_cleaner_enabled, true)
 
     /**
-     * URL of the site-rules.json document on the PHP bridge.
-     * Empty until the user configures their bridge.
+     * URL of the site-rules.json document on the AdZero community bridge.
      */
-    var siteRulesUrl by preferences.stringPreference(R.string.pref_key_site_rules_url, "")
+    var siteRulesUrl by preferences.stringPreference(
+        R.string.pref_key_site_rules_url,
+        "https://adzero.free.nf/bridge/site-rules.json"
+    )
 
     /**
-     * URL of the feedback endpoint (feedback.php) on the PHP bridge.
-     * Empty until the user configures their bridge.
+     * URL of the feedback endpoint (feedback.php) on the AdZero community bridge.
      */
-    var feedbackEndpoint by preferences.stringPreference(R.string.pref_key_feedback_endpoint, "")
+    var feedbackEndpoint by preferences.stringPreference(
+        R.string.pref_key_feedback_endpoint,
+        "https://adzero.free.nf/bridge/feedback.php"
+    )
 
     ///
     /// Various tab event actions
