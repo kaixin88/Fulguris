@@ -37,7 +37,7 @@
         if (DEBUG) { try { console.log(line); } catch (e) {} }
     }
 
-    function has(list, name) { return Object.prototype.hasOwnProperty.call(enabled, name); }
+    function has(name) { return Object.prototype.hasOwnProperty.call(enabled, name); }
 
     // ---------- helpers ----------
 
@@ -112,6 +112,7 @@
 
     var REMOVED = 0;
     var MAX_REMOVE_PER_PASS = 400;
+    var LAST_ERROR = null;
 
     function removeEl(el, reason) {
         if (!el || !el.parentNode || REMOVED >= MAX_REMOVE_PER_PASS) return;
@@ -228,7 +229,7 @@
                 }
             }
             applyCosmetic();
-        } catch (e) { /* fail-open */ }
+        } catch (e) { /* fail-open */ LAST_ERROR = String(e); }
     }
 
     // Cosmetic selectors: hide placeholders/promo slots without removing (safe).
@@ -324,5 +325,10 @@
     } catch (e) { /* fail-open */ }
 
     // Signal for diagnostics: page-level census of what we removed.
-    window.__ADC_STATS__ = { removed: function () { return REMOVED; } };
+    window.__ADC_STATS__ = {
+        removed: function () { return REMOVED; },
+        checks: function () { return CHECKS.length; },
+        cfgRules: function () { return (cfg.rules || []).length; },
+        lastError: function () { return LAST_ERROR; }
+    };
 })();

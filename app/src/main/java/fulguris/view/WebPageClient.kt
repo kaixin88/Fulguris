@@ -5,6 +5,7 @@ import fulguris.R
 import fulguris.adblock.AbpBlockerManager
 import fulguris.adblock.AdBlocker
 import fulguris.adblock.NoOpAdBlocker
+import fulguris.adrules.SiteRule
 import fulguris.browser.WebBrowser
 import fulguris.activity.FRAGMENT_CLASS_NAME
 import fulguris.activity.SettingsActivity
@@ -187,16 +188,30 @@ class WebPageClient(
     private fun siteRuleBlockResponse(request: WebResourceRequest): WebResourceResponse? {
         if (!userPreferences.siteRulesEnabled) return null
         if (request.isForMainFrame) return null
-        val pageHost = currentUrl.toUri().host ?: return null
-        val rule = siteRulesManager.ruleFor(pageHost) ?: return null
-        if (rule.hosts.isEmpty()) return null
         val host = request.url.host?.lowercase() ?: return null
-        // Strict suffix match: never contains(), so notexample.com cannot match example.com
-        val blocked = rule.hosts.any { entry ->
-            val d = entry.trim().lowercase()
-            d.isNotEmpty() && (host == d || host.endsWith(".$d"))
+
+        // Which site does this request belong to? The Referer header is authoritative
+        // for the request itself; currentUrl is the fallback (and covers cases where
+        // the WebView omits Referer). Both are checked because early sub-resources can
+        // be requested before currentUrl is updated for the new page.
+        val pageHosts = LinkedHashSet<String>()
+        request.requestHeaders?.get("Referer")?.toUri()?.host?.let { pageHosts.add(it.lowercase()) }
+        currentUrl.toUri().host?.let { pageHosts.add(it.lowercase()) }
+        if (pageHosts.isEmpty()) return null
+
+        var blockedRule: SiteRule? = null
+        for (pageHost in pageHosts) {
+            val rule = siteRulesManager.ruleFor(pageHost) ?: continue
+            // Strict suffix match: never contains(), so notexample.com cannot match example.com
+            if (rule.hosts.any { entry ->
+                    val d = entry.trim().lowercase()
+                    d.isNotEmpty() && (host == d || host.endsWith(".$d"))
+                }) {
+                blockedRule = rule
+                break
+            }
         }
-        if (!blocked) return null
+        if (blockedRule == null) return null
 
         val path = request.url.path ?: ""
         val (asset, mime, charset) = when {
